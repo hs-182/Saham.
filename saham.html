@@ -1,0 +1,438 @@
+<!DOCTYPE html><html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulasi Saham Virtual</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">  <div class="max-w-6xl mx-auto space-y-6"><div class="bg-white rounded-3xl shadow-lg p-6">
+  <h1 class="text-3xl font-bold">Simulasi Saham Virtual</h1>
+  <p class="text-gray-500 mt-2">Trading saham menggunakan uang virtual.</p>
+</div>
+
+<div class="grid md:grid-cols-3 gap-6">
+
+  <div class="bg-white rounded-3xl shadow-lg p-6">
+    <h2 class="text-xl font-semibold">Saldo Virtual</h2>
+    <p id="saldo" class="text-3xl font-bold mt-4 text-green-600">Rp0</p>
+    <select id="topupSelect" class="border rounded-xl px-4 py-2 w-full mt-4">
+      <option value="5000">Rp5.000</option>
+      <option value="10000">Rp10.000</option>
+      <option value="25000">Rp25.000</option>
+      <option value="50000">Rp50.000</option>
+      <option value="100000">Rp100.000</option>
+      <option value="250000">Rp250.000</option>
+      <option value="500000">Rp500.000</option>
+      <option value="1000000">Rp1.000.000</option>
+    </select>
+
+    <input id="topupInput" type="number" min="5000" step="5000" placeholder="Atau masukkan nominal sendiri (min 5K)"
+      class="border rounded-xl px-4 py-2 w-full mt-3">
+
+    <button onclick="topUp()"
+      class="bg-black text-white rounded-xl w-full py-3 mt-3">
+      Top Up Virtual
+    </button>
+  </div>
+
+  <div class="bg-white rounded-3xl shadow-lg p-6 md:col-span-2">
+    <div class="flex justify-between items-center mb-4">
+      <h2 class="text-xl font-semibold">Market Saham</h2>
+      <input type="text" placeholder="Cari saham..." class="border rounded-xl px-4 py-2">
+    </div>
+
+    <div id="market" class="space-y-4"></div>
+
+    <div id="detailChartBox" class="hidden mt-6 border rounded-3xl p-5 bg-gray-50">
+      <div class="flex justify-between items-center mb-4">
+        <h2 id="detailTitle" class="text-2xl font-bold"></h2>
+        <button onclick="closeDetailChart()" class="bg-black text-white px-4 py-2 rounded-xl">
+          Tutup
+        </button>
+      </div>
+
+      <div class="w-full h-[350px]">
+        <canvas id="detailChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="bg-white rounded-3xl shadow-lg p-6">
+  <h2 class="text-2xl font-bold mb-4">Grafik Saham</h2>
+  <div class="w-full h-[420px]">
+    <canvas id="chart"></canvas>
+  </div>
+</div>
+
+<div class="bg-white rounded-3xl shadow-lg p-6">
+  <h2 class="text-2xl font-bold mb-4">Portfolio</h2>
+
+  <table class="w-full border-collapse">
+    <thead>
+      <tr class="border-b">
+        <th class="text-left py-3">Saham</th>
+        <th class="text-left py-3">Lot</th>
+      </tr>
+    </thead>
+    <tbody id="portfolio"></tbody>
+  </table>
+</div>
+
+  </div>  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>  <script>
+    let saldo = 0;
+
+    const saham = [
+      { nama: 'BBCA', harga: Math.floor(Math.random() * 15000) + 5000, volatilitas: 0.015, trend: 1 },
+      { nama: 'TLKM', harga: Math.floor(Math.random() * 7000) + 2000, volatilitas: 0.012, trend: -1 },
+      { nama: 'ASII', harga: Math.floor(Math.random() * 9000) + 3000, volatilitas: 0.02, trend: 1 },
+      { nama: 'GOTO', harga: Math.floor(Math.random() * 500) + 50, volatilitas: 0.05, trend: 1 },
+      { nama: 'BMRI', harga: Math.floor(Math.random() * 12000) + 4000, volatilitas: 0.018, trend: 1 },
+      { nama: 'BBRI', harga: Math.floor(Math.random() * 9000) + 3000, volatilitas: 0.02, trend: -1 },
+      { nama: 'ICBP', harga: Math.floor(Math.random() * 15000) + 7000, volatilitas: 0.01, trend: 1 },
+      { nama: 'UNVR', harga: Math.floor(Math.random() * 25000) + 10000, volatilitas: 0.009, trend: -1 },
+      { nama: 'ANTM', harga: Math.floor(Math.random() * 5000) + 1000, volatilitas: 0.03, trend: 1 },
+      { nama: 'PTBA', harga: Math.floor(Math.random() * 6000) + 2000, volatilitas: 0.025, trend: 1 },
+      { nama: 'INDF', harga: Math.floor(Math.random() * 12000) + 5000, volatilitas: 0.012, trend: 1 },
+      { nama: 'EXCL', harga: Math.floor(Math.random() * 4000) + 1500, volatilitas: 0.03, trend: -1 },
+      { nama: 'SMGR', harga: Math.floor(Math.random() * 9000) + 3000, volatilitas: 0.02, trend: 1 },
+      { nama: 'ADRO', harga: Math.floor(Math.random() * 7000) + 1000, volatilitas: 0.04, trend: 1 },
+      { nama: 'PGAS', harga: Math.floor(Math.random() * 3000) + 500, volatilitas: 0.035, trend: -1 },
+      { nama: 'CPIN', harga: Math.floor(Math.random() * 8000) + 2000, volatilitas: 0.02, trend: 1 },
+      { nama: 'MYOR', harga: Math.floor(Math.random() * 5000) + 1000, volatilitas: 0.03, trend: 1 },
+      { nama: 'ACES', harga: Math.floor(Math.random() * 2000) + 300, volatilitas: 0.04, trend: -1 },
+      { nama: 'ERAA', harga: Math.floor(Math.random() * 1000) + 100, volatilitas: 0.05, trend: 1 },
+      { nama: 'MEDC', harga: Math.floor(Math.random() * 2500) + 500, volatilitas: 0.045, trend: 1 },
+      { nama: 'BRIS', harga: Math.floor(Math.random() * 4000) + 1000, volatilitas: 0.03, trend: 1 },
+      { nama: 'ELSA', harga: Math.floor(Math.random() * 1000) + 100, volatilitas: 0.06, trend: -1 },
+      { nama: 'AKRA', harga: Math.floor(Math.random() * 5000) + 1000, volatilitas: 0.025, trend: 1 },
+      { nama: 'MDKA', harga: Math.floor(Math.random() * 7000) + 1000, volatilitas: 0.05, trend: 1 },
+      { nama: 'DOID', harga: Math.floor(Math.random() * 800) + 50, volatilitas: 0.08, trend: -1 },
+      { nama: 'BREN', harga: Math.floor(Math.random() * 50000) + 10000, volatilitas: 0.02, trend: 1 },
+      { nama: 'AMMN', harga: Math.floor(Math.random() * 12000) + 3000, volatilitas: 0.025, trend: 1 },
+      { nama: 'CUAN', harga: Math.floor(Math.random() * 15000) + 1000, volatilitas: 0.07, trend: 1 },
+      { nama: 'WIFI', harga: Math.floor(Math.random() * 500) + 50, volatilitas: 0.1, trend: -1 },
+      { nama: 'SIMP', harga: Math.floor(Math.random() * 2500) + 500, volatilitas: 0.03, trend: 1 }
+    ];
+
+    const portfolio = {};
+
+    saham.forEach(item => {
+      item.perubahan = 0;
+    });
+
+    const historyHarga = {};
+
+    saham.forEach(item => {
+      historyHarga[item.nama] = [item.harga];
+    });
+
+    const market = document.getElementById('market');
+    const portfolioTable = document.getElementById('portfolio');
+
+    function formatRupiah(angka) {
+      return 'Rp' + angka.toLocaleString('id-ID');
+    }
+
+    function renderMarket() {
+      market.innerHTML = '';
+
+      saham.forEach((item) => {
+        const card = document.createElement('div');
+        card.className = 'border rounded-2xl p-4 flex justify-between items-center bg-white';
+
+        card.innerHTML = `
+          <div>
+            <h3 class="font-bold text-lg">${item.nama}</h3>
+            <p class="text-gray-500">Harga: ${formatRupiah(item.harga)}</p>
+            <p class="text-sm mt-1 font-bold ${item.perubahan >= 0 ? 'text-green-600' : 'text-red-600'}">
+              ${item.perubahan >= 0 ? '+' : ''}${item.perubahan.toFixed(2)}%
+            </p>
+          </div>
+
+          <div class="flex gap-2 flex-wrap">
+            <button onclick="showDetailChart('${item.nama}')"
+              class="bg-blue-500 text-white px-4 py-2 rounded-xl">
+              Grafik
+            </button>
+
+            <button onclick="buyStock('${item.nama}', ${item.harga})"
+              class="bg-green-500 text-white px-4 py-2 rounded-xl">
+              Buy
+            </button>
+
+            <button onclick="sellStock('${item.nama}', ${item.harga})"
+              class="bg-red-500 text-white px-4 py-2 rounded-xl">
+              Sell
+            </button>
+          </div>
+        `;
+
+        market.appendChild(card);
+      });
+    }
+
+    function renderPortfolio() {
+      portfolioTable.innerHTML = '';
+
+      for (const nama in portfolio) {
+        const row = document.createElement('tr');
+        row.className = 'border-b';
+
+        row.innerHTML = `
+          <td class="py-3">${nama}</td>
+          <td>${portfolio[nama]}</td>
+        `;
+
+        portfolioTable.appendChild(row);
+      }
+
+      document.getElementById('saldo').innerText = formatRupiah(saldo);
+    }
+
+    function buyStock(nama, harga) {
+      const jumlah = parseInt(prompt('Beli berapa lot?'));
+
+      if (!jumlah || jumlah <= 0) {
+        alert('Masukkan jumlah lot yang valid');
+        return;
+      }
+
+      const total = harga * jumlah;
+
+      if (saldo >= total) {
+        saldo -= total;
+
+        if (!portfolio[nama]) {
+          portfolio[nama] = 0;
+        }
+
+        portfolio[nama] += jumlah;
+
+        renderPortfolio();
+      } else {
+        alert('Saldo virtual tidak cukup');
+      }
+    }
+
+    function sellStock(nama, harga) {
+      const jumlah = parseInt(prompt('Jual berapa lot?'));
+
+      if (!jumlah || jumlah <= 0) {
+        return;
+      }
+
+      if (portfolio[nama] >= jumlah) {
+        portfolio[nama] -= jumlah;
+        saldo += harga * jumlah;
+
+        renderPortfolio();
+      } else {
+        alert('Lot tidak cukup');
+      }
+    }
+
+    function topUp() {
+      const inputManual = parseInt(document.getElementById('topupInput').value);
+      const selectValue = parseInt(document.getElementById('topupSelect').value);
+
+      const jumlah = inputManual || selectValue;
+
+      if (!jumlah || jumlah < 5000) {
+        alert('Minimal top up Rp5.000');
+        return;
+      }
+
+      saldo += jumlah;
+      renderPortfolio();
+
+      document.getElementById('topupInput').value = '';
+    }
+
+    const ctx = document.getElementById('chart');
+
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: ['1'],
+        datasets: saham.map((item) => ({
+          label: item.nama,
+          data: historyHarga[item.nama],
+          borderWidth: 4,
+          pointRadius: 0,
+          pointHoverRadius: 0
+        }))
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          intersect: false,
+          mode: 'index'
+        },
+        plugins: {
+          legend: {
+            labels: {
+              font: {
+                size: 16
+              }
+            }
+          }
+        },
+        scales: {
+          x: {
+            ticks: {
+              font: {
+                size: 14
+              }
+            }
+          },
+          y: {
+            ticks: {
+              font: {
+                size: 14
+              }
+            }
+          }
+        }
+      }
+    });
+
+    let tick = 1;
+    let detailChart;
+
+    function showDetailChart(nama) {
+      document.getElementById('detailChartBox').classList.remove('hidden');
+      document.getElementById('detailTitle').innerText = 'Grafik ' + nama;
+
+      const ctxDetail = document.getElementById('detailChart');
+
+      if (detailChart) {
+        detailChart.destroy();
+      }
+
+      detailChart = new Chart(ctxDetail, {
+        type: 'line',
+        data: {
+          labels: historyHarga[nama].map((_, i) => i + 1),
+          datasets: [{
+            label: nama,
+            data: historyHarga[nama],
+            borderWidth: 5,
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false
+        }
+      });
+    }
+
+    function closeDetailChart() {
+      document.getElementById('detailChartBox').classList.add('hidden');
+    }
+
+    for (let preload = 0; preload < 50; preload++) {
+      saham.forEach((item) => {
+        const arahPasar = Math.random() > 0.5 ? 1 : -1;
+
+        let persentaseGerak = (
+          Math.random() * item.volatilitas * arahPasar +
+          (item.trend * 0.003)
+        );
+
+        if (Math.random() > 0.985) {
+          persentaseGerak -= Math.random() * 0.35;
+        }
+
+        if (Math.random() > 0.985) {
+          persentaseGerak += Math.random() * 0.45;
+        }
+
+        const hargaBaru = Math.max(
+          1,
+          Math.round(item.harga + (item.harga * persentaseGerak))
+        );
+
+        historyHarga[item.nama].push(hargaBaru);
+        item.harga = hargaBaru;
+      });
+
+      chart.data.labels.push((preload + 2).toString());
+    }
+
+    setInterval(() => {
+      const jam = new Date().getSeconds();
+
+      if (jam > 50) {
+        return;
+      }
+      saham.forEach((item) => {
+        const arahPasar = Math.random() > 0.5 ? 1 : -1;
+
+        let persentaseGerak = (
+          Math.random() * item.volatilitas * arahPasar +
+          (item.trend * 0.003)
+        );
+
+        // kemungkinan crash besar
+        if (Math.random() > 0.985) {
+          persentaseGerak -= Math.random() * 0.35;
+        }
+
+        // kemungkinan pump besar
+        if (Math.random() > 0.985) {
+          persentaseGerak += Math.random() * 0.45;
+        }
+
+        // event market ekstrem
+        if (Math.random() > 0.997) {
+          persentaseGerak += (Math.random() - 0.5) * 1.2;
+        }
+
+        const hargaLama = item.harga;
+
+        item.harga = Math.round(
+          item.harga + (item.harga * persentaseGerak)
+        );
+
+        item.perubahan = ((item.harga - hargaLama) / hargaLama) * 100;
+
+        historyHarga[item.nama].push(item.harga);
+
+        if (item.harga < 1) {
+          item.harga = 1;
+        }
+
+        if (Math.random() > 0.92) {
+          item.trend *= -1;
+        }
+      });
+
+      renderMarket();
+
+      tick++;
+      chart.data.labels.push(tick.toString());
+
+      chart.data.datasets.forEach((dataset) => {
+        dataset.data = historyHarga[dataset.label];
+      });
+
+      chart.update();
+
+      if (detailChart) {
+        const nama = detailChart.data.datasets[0].label;
+
+        detailChart.data.labels = historyHarga[nama].map((_, i) => i + 1);
+        detailChart.data.datasets[0].data = historyHarga[nama];
+        detailChart.update();
+      }
+    }, 3000);
+
+    renderMarket();
+    renderPortfolio();
+  </script></body>
+</html>
